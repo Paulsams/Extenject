@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using ModestTree;
 using UnityEngine;
 using UnityEngine.Serialization;
+using UnityEngine.UIElements;
 using Zenject.Internal;
 
 #pragma warning disable 649
@@ -106,6 +107,21 @@ namespace Zenject
 
                 _container.QueueForInject(instance);
             }
+
+            // UIDocument is defined in the UI Elements package. In Unity 2021.1 the package was deprecated
+            // in favor of including it in the UI Elements module. Earlier Unity versions already had that
+            // module, but it does not include UIDocument.
+#if (USE_UI_ELEMENTS_PACKAGE  && !ZENJECT_DISABLE_DEFAULT_UI_ELEMENTS_INJECTION) || (USE_UI_ELEMENTS_MODULE && UNITY_2021_1_OR_NEWER && !ZENJECT_DISABLE_DEFAULT_UI_ELEMENTS_INJECTION)
+            UIDocument[] uiDocuments = gameObject.GetComponentsInChildren<UIDocument>(true);
+            for (int j = 0; j < uiDocuments.Length; ++j)
+            {
+                var rootElement = uiDocuments[j].rootVisualElement;
+                if (uiDocuments[j].rootVisualElement != null)
+                {
+                    rootElement.Query().ForEach(x => _container.QueueForInject(x));
+                }
+            }
+#endif
 
             _container.IsInstalling = true;
 
